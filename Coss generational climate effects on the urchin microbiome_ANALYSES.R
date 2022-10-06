@@ -1167,7 +1167,7 @@ sum(which(data.offset == 0)) # check how many zeroes there are
 dim(data.offset) # check dimensions
 pca.result <- pca(data.offset, logratio = 'CLR') # undergo PCA after CLR transformation
 design <- data.frame(sample = meta.data$tank) #tank as repeated measure
-X <- logratio.transfo(data.offset) #data transformation
+X <- logratio.transfo(data.offset,logratio = "CLR") #data transformation
 Y <- as.factor(meta.data$treatment)
 q3.splsda <- splsda(X, Y, ncomp = 10)
 perf.splsda.q3 <- perf(q3.splsda, validation = "Mfold", 
@@ -1178,14 +1178,14 @@ plot(perf.splsda.q3, col = color.mixo(5:7), sd = TRUE,
 perf.splsda.q3$error.rate.class$mahalanobis.dist
 perf.splsda.q3$choice.ncomp 
 list.keepX <- c(1:10,  seq(20, 300, 10)) 
-tune.splsda.q3 <- tune.splsda(X, Y, ncomp = 5,
+tune.splsda.q3 <- tune.splsda(X, Y, ncomp = 7,
    validation = 'Mfold',
-  folds = 5, nrepeat = 50, # use repeated cross-validation
+  folds = 3, nrepeat = 50, # use repeated cross-validation
   dist = 'max.dist', 
  measure = "BER", # use  balanced error rate of dist measure instead of overall (suggested in mixomics book and forum for dataset with unbalanced design) 
  test.keepX = list.keepX, #number of variables to select on each component
   cpus = 2) # allow for paralleliation to decrease runtime
-plot(tune.splsda.q3, col = color.jet(5)) # plot output of variable number tuning
+plot(tune.splsda.q3, col = color.jet(7)) # plot output of variable number tuning
 #the optimal number of components accordding to our one-sided t-tests:
 tune.splsda.q3$choice.ncomp$ncomp 
 #the optimal keppX parameter according to minimal error rate:
