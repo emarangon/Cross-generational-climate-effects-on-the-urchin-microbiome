@@ -176,6 +176,7 @@ FINALabundances_cutoff = prune_taxa(taxa_sums(FINALabundances_cutoff) > 0, FINAL
 
 ####### RAREFACTION
 rarefied = rarefy_even_depth(phyloseq_merged_FINAL, rngseed=1, sample.size = min(sample_sums(phyloseq_merged_FINAL)))
+FINALrarefied <- subset_samples(rarefied, sample_date != "gonad_29.11.17" & sample_sex != "gonad_male" & sample_generation != "larvae_F2_dead")
 FINAL_rarefied = prune_taxa(taxa_sums(FINALrarefied) > 0, FINALrarefied)  #remove unobserved ASVs (sum 0 across all samples) 
 
 
