@@ -652,6 +652,10 @@ Q2_d_part2 = phyloseq::distance(FINAL_abundances_Q2_sqrt_part2,'bray')
 Adonis_Q2_part2 <-adonis2(Q2_d_part2 ~ climate1 + tank, data=Q2_adonis_part2,  permutations = 10000, method = "bray") 
 Adonis_Q2_part2 #significant
 			
+beta <- betadisper(Q2_d_part2, sample_data(FINAL_abundances_Q2_sqrt_part2)$climate1)
+disper.test = permutest(beta, permutations =10000)
+disper.test # OK
+						    
 						    
 ### climate1 ; F1 larvae only ###
 						    
@@ -663,6 +667,11 @@ Q2_adonis_part3 = as (sample_data(FINAL_abundances_Q2_sqrt_part3), "data.frame")
 Q2_d_part3 = phyloseq::distance(FINAL_abundances_Q2_sqrt_part3,'bray') 
 Adonis_Q2_part3 <-adonis2(Q2_d_part3 ~ climate1, data=Q2_adonis_part3,  permutations = 10000, method = "bray") 
 Adonis_Q2_part3	
+						    
+beta <- betadisper(Q2_d_part3, sample_data(FINAL_abundances_Q2_sqrt_part3)$climate1)
+disper.test = permutest(beta, permutations =10000)
+disper.test # OK
+						    
 #5-day						    
 FINAL_abundances_Q2_sqrt_part3 <-  subset_samples(FINAL_abundances_Q2_sqrt, sample_generation == "larvae_F1_second")
 table(sample_data(FINAL_abundances_Q2_sqrt_part3)$sample_generation)
@@ -671,7 +680,11 @@ Q2_adonis_part3 = as (sample_data(FINAL_abundances_Q2_sqrt_part3), "data.frame")
 Q2_d_part3 = phyloseq::distance(FINAL_abundances_Q2_sqrt_part3,'bray') 
 Adonis_Q2_part3 <-adonis2(Q2_d_part3 ~ climate1, data=Q2_adonis_part3,  permutations = 10000, method = "bray") 
 Adonis_Q2_part3	
-			
+
+beta <- betadisper(Q2_d_part3, sample_data(FINAL_abundances_Q2_sqrt_part3)$climate1)
+disper.test = permutest(beta, permutations =10000)
+disper.test # OK
+						    
 						    
 ### seawaterTimePoint*climate1  ###
 FINAL_abundances_Q2_sqrt_part4 <-  subset_samples(FINAL_abundances_Q2_sqrt, sample_generation == "seawater")
@@ -682,6 +695,15 @@ Q2_d_part4 = phyloseq::distance(FINAL_abundances_Q2_sqrt_part4,'bray')
 Adonis_Q2_part4 <-adonis2(Q2_d_part4 ~ seawaterTimePoint*climate1 + tank, data=Q2_adonis_part4,  permutations = 10000, method = "bray") 
 Adonis_Q2_part4						    
 
+beta <- betadisper(Q2_d_part4, sample_data(FINAL_abundances_Q2_sqrt_part4)$climate1)
+disper.test = permutest(beta, permutations =10000)
+disper.test # OK
+
+beta <- betadisper(Q2_d_part4, sample_data(FINAL_abundances_Q2_sqrt_part4)$seawaterTimePoint)
+disper.test = permutest(beta, permutations =10000)
+disper.test # p < 0.05, NOT OK
+						    
+						    
 ############################################################
 ### DESEQ2 - differentially abundant ASVs ###
 
