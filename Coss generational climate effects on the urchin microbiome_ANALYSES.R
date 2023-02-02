@@ -489,31 +489,49 @@ simulationOutput <- simulateResiduals(fittedModel = Shannon_Q1_larvae, plot = T)
 ############################################################
 ### VENN DIAGRAM ###
 
-venn <- subset_samples(rarefied_Q1_NOcutoff, sample_generation !="seawater")
-variable1 = as.character(get_variable(venn, "sampleType"))
-variable2 = as.character(get_variable(venn, "generation"))
-sample_data(venn)$SampleType_gen <- mapply(paste0, variable1, variable2, 
-                                            collapse = "_") #create new vairable in phyloseq
-#figure										
-ps_venn(
-venn,
-"SampleType_gen",
-fraction = 0.5, #The fraction (0 to 1) of samples in a group in which the taxa should be present to be included in the count
-weight = FALSE, #If TRUE, the overlaps are weighted by abundance
-relative = TRUE, #Should abundances be made relative
-plot = TRUE
-)							
+venn <- subset_samples(rarefied_Q1_NOcutoff, sample_generation =="gonad_F0" | sample_generation =="larvae_F1_first"| sample_generation =="larvae_F1_second" | sample_generation =="juvenile_F1")			    
+ps_venn(venn,
+          "sample_generation",
+          fraction = 0.5, #The fraction (0 to 1) of samples in a group in which the taxa should be present to be included in the count
+          weight = FALSE, #If TRUE, the overlaps are weighted by abundance
+          relative = TRUE, #Should abundances be made relative
+          plot = TRUE, fill = c("#D6CCCC","#767C80","#D3DEDC", "#92A9BD") #figure	
+          )
+						
+ps_venn(venn,
+          "sample_generation",
+          fraction = 0.5, 
+          weight = FALSE, 
+          relative = TRUE, 
+          plot = FALSE #list shared ASVs
+          )
 
-##list shared ASVs
-ps_venn(
-  venn,
-  "SampleType_gen",
-  fraction = 0.5, 
-  weight = FALSE, 
-  relative = TRUE, 
-  plot = FALSE
+venn <- subset_samples(rarefied_Q1_NOcutoff, sample_generation =="gonad_F0" | sample_generation =="gonad_F1" | sample_generation =="larvae_F1_first" | sample_generation =="larvae_F2_first")
+ps_venn(venn,
+        "sample_generation",
+        fraction = 0.5, 
+        weight = FALSE,
+        relative = TRUE, 
+        plot = TRUE, fill = c("#D6CCCC","#B5A4A4","#D3DEDC", "#9FB7B3")
 )
-
+			    
+venn <- subset_samples(rarefied_Q1_NOcutoff, sample_generation =="larvae_F1_first" | sample_generation =="larvae_F1_second" |seawaterTimePoint =="larvaeF1")
+ps_venn(venn,
+        "sample_generation",
+        fraction = 0.5, 
+        weight = FALSE, 
+        relative = TRUE,
+        plot = TRUE, fill = c("#D3DEDC","#92A9BD","#4CB0DF")
+)
+			    
+venn <- subset_samples(rarefied_Q1_NOcutoff, sample_generation =="juvenile_F1" | seawaterTimePoint =="juvenileF1")
+ps_venn(venn,
+        "sample_generation",
+        fraction = 0.5,
+        weight = FALSE,
+        relative = TRUE,
+        plot = TRUE, fill = c("#D6C298","#4CB0DF")
+)			    
 
 ########################################################################################################################
 ########################################################################################################################
@@ -1176,6 +1194,74 @@ simulationOutput <- simulateResiduals(fittedModel = model_Shannon_Q2, plot = T) 
 ### post hoc tests###
 hgtSampleType<- glht(model_Shannon_Q2, linfct=mcp(sampleType="Tukey")) 
 summary(hgtSampleType,test = adjusted("BH"))
+
+
+
+############################################################
+### VENN DIAGRAM ###
+
+venn <- subset_samples(rarefied_Q2_NOcutoff, climate1 != "M" & sample_generation =="larvae_F1_first" | climate1 != "M" & seawaterTimePoint =="larvaeF1")
+ps_venn(venn,
+        "sample_treatment",
+        fraction = 0.5,
+        weight = FALSE,
+        relative = TRUE,
+        plot = TRUE, fill = c("#D3DEDC","#D3DEDC", "#4CB0DF", "#4CB0DF")
+)
+
+venn <- subset_samples(rarefied_Q2_NOcutoff, climate1 != "H" & sample_generation =="larvae_F1_first" | climate1 != "H" & seawaterTimePoint =="larvaeF1")
+ps_venn(venn,
+        "sample_treatment",
+        fraction = 0.5,
+        weight = FALSE,
+        relative = TRUE,
+        plot = TRUE, fill = c("#D3DEDC","#D3DEDC", "#4CB0DF", "#4CB0DF")
+)
+
+venn <- subset_samples(rarefied_Q2_NOcutoff, climate1 != "M" & sample_generation =="larvae_F1_first" | climate1 != "M" & seawaterTimePoint =="larvaeF1")
+ps_venn(venn,
+        "sample_treatment",
+        fraction = 0.5, #The fraction (0 to 1) of samples in a group in which the taxa should be present to be included in the count
+        weight = FALSE, #If TRUE, the overlaps are weighted by abundance
+        relative = TRUE, #Should abundances be made relative
+        plot = TRUE, fill = c("#D3DEDC","#D3DEDC", "#4CB0DF", "#4CB0DF")
+)
+
+venn <- subset_samples(rarefied_Q2_NOcutoff, climate1 != "H" & sample_generation =="larvae_F1_first" | climate1 != "H" & seawaterTimePoint =="larvaeF1")
+ps_venn(venn,
+        "sample_treatment",
+        fraction = 0.5, #The fraction (0 to 1) of samples in a group in which the taxa should be present to be included in the count
+        weight = FALSE, #If TRUE, the overlaps are weighted by abundance
+        relative = TRUE, #Should abundances be made relative
+        plot = TRUE, fill = c("#D3DEDC","#D3DEDC", "#4CB0DF", "#4CB0DF")
+)
+
+venn <- subset_samples(rarefied_Q2_NOcutoff, climate1 == "M" & sample_generation =="gonad_F0" | climate1 == "M" & sample_generation =="larvae_F1_first"| climate1 == "M" & sample_generation =="larvae_F1_second" | climate1 == "M" & sample_generation =="juvenile_F1")
+ps_venn(venn,
+        "sample_treatment",
+        fraction = 0.5, #The fraction (0 to 1) of samples in a group in which the taxa should be present to be included in the count
+        weight = FALSE, #If TRUE, the overlaps are weighted by abundance
+        relative = TRUE, #Should abundances be made relative
+        plot = TRUE
+)
+
+venn <- subset_samples(rarefied_Q2_NOcutoff, climate1 == "H" & sample_generation =="gonad_F0" | climate1 == "H" & sample_generation =="larvae_F1_first"| climate1 == "H" & sample_generation =="larvae_F1_second" | climate1 == "H" & sample_generation =="juvenile_F1")
+ps_venn(venn,
+        "sample_treatment",
+        fraction = 0.5, #The fraction (0 to 1) of samples in a group in which the taxa should be present to be included in the count
+        weight = FALSE, #If TRUE, the overlaps are weighted by abundance
+        relative = TRUE, #Should abundances be made relative
+        plot = TRUE
+)
+
+venn <- subset_samples(rarefied_Q2_NOcutoff, climate1 == "H" & sample_generation =="gonad_F0" | climate1 == "H" & sample_generation =="gonad_F1" | climate1 == "H" & sample_generation =="larvae_F1_first" | climate1 == "H" & sample_generation =="larvae_F2_first")
+ps_venn(venn,
+        "sample_treatment",
+        fraction = 0.5, #The fraction (0 to 1) of samples in a group in which the taxa should be present to be included in the count
+        weight = FALSE, #If TRUE, the overlaps are weighted by abundance
+        relative = TRUE, #Should abundances be made relative
+        plot = TRUE
+)
 
 
 ########################################################################################################################
