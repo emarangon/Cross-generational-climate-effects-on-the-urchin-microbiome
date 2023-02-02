@@ -611,44 +611,76 @@ bubbleFamily_Q2 <- ggplot(p, aes(x = name2, y = Family, color = Class)) +
 ############################################################
 ### STATS BETA DIVERSITY ###
 
-### climate1*sampleType ###
-
-Q2_adonis = as (sample_data(FINAL_abundances_Q2_sqrt), "data.frame")
-Q2_d = phyloseq::distance(FINAL_abundances_Q2_sqrt,'bray') 
-
-Adonis_Q2 <-adonis2(Q2_d ~ climate1*sampleType + climate1*generation + tank, data=Q2_adonis,  permutations = 10000, method = "bray") 
-Adonis_Q2 
-
+### sampleType*climate1 ; F0 adults, F1 larvae, F1 juvenile only ###
+						    
+FINAL_abundances_Q2_sqrt_part1 <- subset_samples(FINAL_abundances_Q2_sqrt, sample_generation != "gonad_F1" & sample_generation != "larvae_F2_first" & sample_generation != "larvae_F2_second" & sample_generation != "seawater")
+table(sample_data(FINAL_abundances_Q2_sqrt_part1)$sample_generation)
+Q2_adonis_part1 = as (sample_data(FINAL_abundances_Q2_sqrt_part1), "data.frame")
+Q2_d_part1 = phyloseq::distance(FINAL_abundances_Q2_sqrt_part1,'bray') 						    
+Adonis_Q2_part1 <-adonis2(Q2_d_part1 ~ sampleType*climate1 + tank, data=Q2_adonis_part1,  permutations = 10000, method = "bray") 
+Adonis_Q2_part1
+						    
 ## dispersion ##
-beta <- betadisper(Q2_d, sample_data(FINAL_abundances_Q2_sqrt)$sampleType)
+beta <- betadisper(Q2_d_part1, sample_data(FINAL_abundances_Q2_sqrt_part1)$climate1)
+disper.test = permutest(beta, permutations =10000)
+disper.test #OK
+						    
+beta <- betadisper(Q2_d_part1, sample_data(FINAL_abundances_Q2_sqrt_part1)$sampleType)
 plot(beta)
 boxplot (beta)
 disper.test = permutest(beta, permutations =10000)
 disper.test # p < 0.05, NOT OK
 TukeyHSD (beta)
-
-beta <- betadisper(Q2_d, sample_data(FINAL_abundances_Q2_sqrt)$climate1)
-disper.test = permutest(beta, permutations =10000)
-disper.test # OK
-
-beta <- betadisper(Q2_d, sample_data(FINAL_abundances_Q2_sqrt)$generation)
-plot(beta)
-boxplot (beta)
+						    
+beta <- betadisper(Q2_d_part1, sample_data(FINAL_abundances_Q2_sqrt_part1)$tank)
 disper.test = permutest(beta, permutations =10000)
 disper.test # p < 0.05, NOT OK
-TukeyHSD (beta)
 
 ## post hoc tests ##
-sample_data(FINAL_abundances_Q2_sqrt)$climateSample <-interaction(sample_data(FINAL_abundances_Q2_sqrt)$climate1, sample_data(FINAL_abundances_Q2_sqrt)$sampleType)
-testing_climateSample = pairwise.perm.manova(Q2_d, sample_data(FINAL_abundances_Q2_sqrt)$climateSample,
-                                    nperm=10000, p.method = "BH")
+sample_data(FINAL_abundances_Q2_sqrt_part1)$climateSample <-interaction(sample_data(FINAL_abundances_Q2_sqrt_part1)$climate1, sample_data(FINAL_abundances_Q2_sqrt_part1)$sampleType)
+testing_climateSample = pairwise.perm.manova(Q2_d_part1, sample_data(FINAL_abundances_Q2_sqrt_part1)$climateSample,
+                                             nperm=10000, p.method = "BH")
 testing_climateSample
 
-testing_generation = pairwise.perm.manova(Q2_d, sample_data(FINAL_abundances_Q2_sqrt)$generation,
-                                          nperm=10000, p.method = "BH")
-testing_generation$p.value 	
 
-
+### climate1 ; F1 adults only ###
+						    
+FINAL_abundances_Q2_sqrt_part2 <- subset_samples(FINAL_abundances_Q2_sqrt, sample_generation == "gonad_F1")
+table(sample_data(FINAL_abundances_Q2_sqrt_part2)$sample_generation)
+Q2_adonis_part2 = as (sample_data(FINAL_abundances_Q2_sqrt_part2), "data.frame")
+Q2_d_part2 = phyloseq::distance(FINAL_abundances_Q2_sqrt_part2,'bray') 						    
+Adonis_Q2_part2 <-adonis2(Q2_d_part2 ~ climate1 + tank, data=Q2_adonis_part2,  permutations = 10000, method = "bray") 
+Adonis_Q2_part2 #significant
+			
+						    
+### climate1 ; F1 larvae only ###
+						    
+#1-day						    
+FINAL_abundances_Q2_sqrt_part3 <-  subset_samples(FINAL_abundances_Q2_sqrt, sample_generation == "larvae_F1_first")
+table(sample_data(FINAL_abundances_Q2_sqrt_part3)$sample_generation)
+table(sample_data(FINAL_abundances_Q2_sqrt_part3)$climate1)	
+Q2_adonis_part3 = as (sample_data(FINAL_abundances_Q2_sqrt_part3), "data.frame")
+Q2_d_part3 = phyloseq::distance(FINAL_abundances_Q2_sqrt_part3,'bray') 
+Adonis_Q2_part3 <-adonis2(Q2_d_part3 ~ climate1, data=Q2_adonis_part3,  permutations = 10000, method = "bray") 
+Adonis_Q2_part3	
+#5-day						    
+FINAL_abundances_Q2_sqrt_part3 <-  subset_samples(FINAL_abundances_Q2_sqrt, sample_generation == "larvae_F1_second")
+table(sample_data(FINAL_abundances_Q2_sqrt_part3)$sample_generation)
+table(sample_data(FINAL_abundances_Q2_sqrt_part3)$climate1)
+Q2_adonis_part3 = as (sample_data(FINAL_abundances_Q2_sqrt_part3), "data.frame")
+Q2_d_part3 = phyloseq::distance(FINAL_abundances_Q2_sqrt_part3,'bray') 
+Adonis_Q2_part3 <-adonis2(Q2_d_part3 ~ climate1, data=Q2_adonis_part3,  permutations = 10000, method = "bray") 
+Adonis_Q2_part3	
+			
+						    
+### seawaterTimePoint*climate1  ###
+FINAL_abundances_Q2_sqrt_part4 <-  subset_samples(FINAL_abundances_Q2_sqrt, sample_generation == "seawater")
+table(sample_data(FINAL_abundances_Q2_sqrt_part4)$seawaterTimePoint)
+table(sample_data(FINAL_abundances_Q2_sqrt_part4)$climate1)
+Q2_adonis_part4 = as (sample_data(FINAL_abundances_Q2_sqrt_part4), "data.frame")
+Q2_d_part4 = phyloseq::distance(FINAL_abundances_Q2_sqrt_part4,'bray') 
+Adonis_Q2_part4 <-adonis2(Q2_d_part4 ~ seawaterTimePoint*climate1 + tank, data=Q2_adonis_part4,  permutations = 10000, method = "bray") 
+Adonis_Q2_part4						    
 
 ############################################################
 ### DESEQ2 - differentially abundant ASVs ###
