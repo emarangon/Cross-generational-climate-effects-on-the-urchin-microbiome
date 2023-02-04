@@ -18,19 +18,19 @@ library(dplyr)
 library(tidyr)
 library(tibble)
 library(vegan)
-library (decontam)
+library (decontam) #identify contaminants 
 library(scales)   #to change y axis tick marks to percentage
 library(forcats) #to change order groups axix x (mutate function)
 library(RColorBrewer) #to change colours graphs
 library(RVAideMemoire) #post hoc tests beta diversity
 library (DESeq2) #differentially abundant ASVs
-library(lme4) #linear mixed models for alpha diversity
-library(car) #for Anova
+library(glmmTMB) #linear mixed models for alpha diversity
 library(DHARMa) #check assumptions linear mixed models
-library(multcomp) ##post hoc tests alpha diversity
+library(emmeans) ##post hoc tests alpha diversity
 library("MicEco") #venn diagram
 library(fct_relevel)
 library(mixOmics)
+library (btools) #calculate Faith's phylogenetic diversity
 
 
 ############################################################
@@ -467,25 +467,66 @@ metadata12 <- metadata11 %>% mutate(sample_gen = replace(sample_gen, sample_gen=
 metadata13 <- metadata12 %>% mutate(sample_gen = replace(sample_gen, sample_gen== "seawater_F1", "seawater"))
 richness_table_ver <- inner_join(RICHNESSVER, metadata13, by="sampleID")
 
+##calculate evenness
+H<- richQ1$Shannon
+S1<- richQ1$Observed
+s<-log(S1)
+evenness <- H/s
+richness_table_ver$Evenness = evenness	
 
-## stats sampleType*generation ##
+##calculate Faith's phylogenetic diversity			    
+PD1 <- estimate_pd(rarefied_Q1_NOcutoff)
+richness_table_ver$PhyloDiv = PD1$PD	
+			    
+#more preprocessing
+table(sample_data(richness_table_ver)$sampleType)
+table(sample_data(richness_table_ver)$generation)
 richness_table_ver$sampleType <- as.factor(richness_table_ver$sampleType)
 richness_table_ver$generation <- as.factor(richness_table_ver$generation)
-log_model_Shannon_Q1 <- lmer(log10(Shannon+1) ~ sampleType*generation + (1|tank), data = richness_table_ver)
-Anova(log_model_Shannon_Q1) 
-simulationOutput <- simulateResiduals(fittedModel = log_model_Shannon_Q1, plot = T) #no problems detected
+richness_table_ver %>% dplyr::group_by(sampleType, generation)%>% count()
+richness_table_ver %>% pull(sampleType) %>% levels()
+richness_table_ver %>% pull(generation) %>% levels()
+richness_table_ver2 <- richness_table_ver %>% mutate(Group =  factor(paste(sampleType,generation))) #better to have group instead of interaction between factors due to unbalanced design 
+richness_table_ver2 %>% pull(Group) %>% levels()			    
+
+## stats Shannon ##
+mod1 <- glmmTMB(Shannon ~ Group + (1|tank), data = richness_table_ver2, family = 'gaussian', REML = TRUE)
+summary(mod1)
+simulateResiduals(fittedModel = mod1, plot = T) #no problems detected
 
 ## post hoc tests ##
-hgtSampleType<- glht(log_model_Shannon_Q1, linfct=mcp(sampleType="Tukey"))  
-summary(hgtSampleType,test = adjusted("BH")) 
+emmeans (mod1, ~Group, type = "response") %>% pairs %>%rbind(adjust='bh')
+			    
+#plot Shannon is in next section
+			    
+#plot Evenness
+p <- ggplot(for_plot, aes(x=sample_GEN, y=Evenness)) + 
+  geom_boxplot(alpha=0.3, colour = "black", lwd=0.2) + theme_bw() + labs(title = "Evenness") + theme( axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + aes (fill=sampleType) +
+  geom_point(colour = "black", size = 1)
+p
+			    
+#plot tot ASVs
+p <- ggplot(for_plot, aes(x=sample_GEN, y=Observed)) + 
+  geom_boxplot(alpha=0.3, colour = "black", lwd=0.2) + theme_bw() + labs(title = "Observed") + theme( axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + aes (fill=sampleType) +
+  geom_point(colour = "black", size = 1)
+p
+			    
+			    
+#plot Simpson
+p <- ggplot(for_plot, aes(x=sample_GEN, y=Simpson)) + 
+  geom_boxplot(alpha=0.3, colour = "black", lwd=0.2) + theme_bw() + labs(title = "Simpson") + theme( axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + aes (fill=sampleType) +
+  geom_point(colour = "black", size = 1)
+p
 
-## stats larval age ##
-richness_table_ver_larvae <- subset (richness_table_ver, sampleType == "larvae")
-Shannon_Q1_larvae <- lmer(Shannon ~ larvaeTimePoint + (1|tank), data = richness_table_ver_larvae)
-simulationOutput <- simulateResiduals(fittedModel = Shannon_Q1_larvae, plot = T) #no problems detected
+			    
+#plot Faith's Phylogenetic Dviersity
+p <- ggplot(for_plot, aes(x=sample_GEN, y=PhyloDiv)) + 
+  geom_boxplot(alpha=0.3, colour = "black", lwd=0.2) + theme_bw() + labs(title = "PhyloDiv") + theme( axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + aes (fill=sampleType) +
+  geom_point(colour = "black", size = 1)
+p
 
-
-
+			    
+			    
 ############################################################
 ### VENN DIAGRAM ###
 
@@ -1139,23 +1180,20 @@ plotIndiv(pca.result,
 ### ALPHA DIVERSITY ###
 
 ## pre-processing ##
-richQ2 = estimate_richness(rarefied_Q2_NOcutoff, split=TRUE)
+richQ2 = estimate_richness(rarefied_Q2_NOcutoff, split=TRUE) #to calculate diversity indexes: shannon, simpson, etc.
 richQ2<-as.data.frame(richQ2)
-RICHNESS_Q2<-tibble::rownames_to_column(as.data.frame(richQ2), var="sampleID")
-RICHNESS_Q2$sampleID = gsub("X", "", RICHNESS_Q2$sampleID) 
+RICHNESS_Q2<-tibble::rownames_to_column(as.data.frame(richQ2), var="sampleID") #I need to create a new column named 'sampleID' so I can use right_join in the next command (otherwise sampleiDs would be only on row_names and right_join would not work)
+RICHNESS_Q2$sampleID = gsub("X", "", RICHNESS_Q2$sampleID) # I modify SampleIDs as there was an extra X at the beginning of each ID. I therefore substitute X in RICHNESS$SAMPLE with ""
 metadata10 <- tibble::rownames_to_column(as.data.frame(metadata9), var="sampleID")
-metadata11 <- metadata10 %>% unite ("sample_gen", sampleType, generation, sep="_", remove=FALSE, na.rm = TRUE)
-metadata12 <- metadata11 %>% mutate(sample_gen = replace(sample_gen, sample_gen== "seawater_F0", "seawater"))
-metadata13 <- metadata12 %>% mutate(sample_gen = replace(sample_gen, sample_gen== "seawater_F1", "seawater")) 
-richness_table_Q2 <- right_join(RICHNESS_Q2, metadata13, by="sampleID")
-urchin_richness_Q2 <- as.data.frame(richness_table_Q2)
-richness_table_Q2_filtered <- subset (urchin_richness_Q2, sample_date != "gonad_29.11.17" & sample_sex != "gonad_male" & sample_generation != "larvae_F2_dead", treatment != "CCM" & treatment != "CCH" & treatment != "MMH" & treatment != "MMHH") #filtering samples
-alpha_plot_Q2 <- subset(richness_table_Q2_filtered, Shannon != "blank" & Shannon !="eggs_F0" & Shannon !="embryos_F1") #more filtering
+metadata11 <- metadata10 %>% unite ("sample_gen", sampleType, generation, sep="_", remove=FALSE, na.rm = TRUE) # I add a column as combination of sampleType and generation to the metadat10
+metadata12 <- metadata11 %>% mutate(sample_gen = replace(sample_gen, sample_gen== "seawater_F0", "seawater")) #I want to have 'seawater' instead of 'seawater_F0'
+metadata13 <- metadata12 %>% mutate(sample_gen = replace(sample_gen, sample_gen== "seawater_F1", "seawater")) #I want to have 'seawater' instead of 'seawater_F1'
+richness_table_Q2 <- inner_join(RICHNESS_Q2, metadata13, by="sampleID")
 
 
 ## plots ##
 #AMBIENT
-alpha_plot_Q2_C <- subset(alpha_plot_Q2, climate1 =="C")
+alpha_plot_Q2_C <- subset(richness_table_Q2, climate1 =="C")
 alpha_plot_Q2_C_order <- alpha_plot_Q2_C %>% mutate(name2 = fct_relevel(sample_gen, "gonad_F0", "gonad_F1", "larvae_F1", "larvae_F2", "juvenile_F1", "seawater")) #to reorder x axis
 nb.cols <- 4
 mycolors <- colorRampPalette(brewer.pal(4, "Set3"))(nb.cols)
@@ -1166,7 +1204,7 @@ p
 
 
 #2050
-alpha_plot_Q2_M <- subset(alpha_plot_Q2, climate1 =="M")
+alpha_plot_Q2_M <- subset(richness_table_Q2, climate1 =="M")
 alpha_plot_Q2_M_order <- alpha_plot_Q2_M %>% mutate(name2 = fct_relevel(sample_gen, "gonad_F0", "larvae_F1", "juvenile_F1", "seawater")) #to reorder x axis
 nb.cols <- 4
 mycolors <- colorRampPalette(brewer.pal(4, "Set3"))(nb.cols)
@@ -1176,7 +1214,7 @@ p <- ggplot(alpha_plot_Q2_M_order, aes(x=name2, y=Shannon)) +
 p
 
 #2100	
-alpha_plot_Q2_H <- subset(alpha_plot_Q2, climate1 =="H")
+alpha_plot_Q2_H <- subset(richness_table_Q2, climate1 =="H")
 alpha_plot_Q2_H_order <- alpha_plot_Q2_H %>% mutate(name2 = fct_relevel(sample_gen, "gonad_F0", "gonad_F1", "larvae_F1", "larvae_F2", "juvenile_F1", "seawater")) #to reorder x axis
 nb.cols <- 4
 mycolors <- colorRampPalette(brewer.pal(4, "Set3"))(nb.cols)
@@ -1186,15 +1224,22 @@ p <- ggplot(alpha_plot_Q2_H_order, aes(x=name2, y=Shannon)) +
 p
 	
 								 
-## stats climate1*sampleType + climate1*generation ##
-model_Shannon_Q2 <- lmer(Shannon ~ climate1*sampleType + climate1*generation + (1|tank), data = richness_table_Q2_filtered)
-Anova(model_Shannon_Q2) 
-simulationOutput <- simulateResiduals(fittedModel = model_Shannon_Q2, plot = T) #no problems detected
+## more pre-processing ##
+richness_table_Q2$sampleType <- as.factor(richness_table_Q2$sampleType)
+richness_table_Q2$generation <- as.factor(richness_table_Q2$generation)
+richness_table_Q2$climate1 <- as.factor(richness_table_Q2$climate1)
+richness_table_Q2 %>% dplyr::group_by(climate1, generation, sampleType)%>% count()
+richness_table_Q2 %>% pull(sampleType) %>% levels()
+richness_table_Q2 %>% pull(generation) %>% levels()
+richness_table_Q2 %>% pull(climate1) %>% levels()
+richness_table_Q2_final <- richness_table_Q2 %>% mutate(Group =  factor(paste(sampleType,generation, climate1)))
+richness_table_Q2_final %>% pull(Group) %>% levels()
 
-### post hoc tests###
-hgtSampleType<- glht(model_Shannon_Q2, linfct=mcp(sampleType="Tukey")) 
-summary(hgtSampleType,test = adjusted("BH"))
-
+## stats Shannon diversity
+mod1 <- glmmTMB(Shannon ~ Group + (1|tank), data = richness_table_Q2_final, family = 'gaussian', REML = TRUE)
+summary(mod1)
+simulateResiduals(fittedModel = mod1, plot = T) #no problems detected
+emmeans (mod1, ~Group, type = "response") %>% pairs %>%rbind(adjust='bh')
 
 
 ############################################################
@@ -1547,22 +1592,24 @@ richQ3<-as.data.frame(richQ3)
 RICHNESS_Q3<-tibble::rownames_to_column(as.data.frame(richQ3), var="sampleID")
 RICHNESS_Q3$sampleID = gsub("X", "", RICHNESS_Q3$sampleID) 
 metadata14 <- tibble::rownames_to_column(as.data.frame(metadata8), var="sampleID")
-richness_table_Q3 <- right_join(RICHNESS_Q3, metadata14, by="sampleID")
-richness_table_Q3_filtered <- subset (richness_table_Q3, sample_date != "gonad_29.11.17" & sample_sex != "gonad_male" & sample_generation != "larvae_F2_dead") #filtering samples
-richness_Q3_juv <- subset(richness_table_Q3_filtered, sampleType == "juvenile") #more filtering
+richness_table_Q3 <- inner_join(RICHNESS_Q3, metadata14, by="sampleID")
+richness_table_Q3$climate1 <- as.factor(richness_table_Q3$climate1)
+richness_table_Q3$climateFINAL <- as.factor(richness_table_Q3$climateFINAL)
+richness_table_Q3 %>% dplyr::group_by(climate1, climateFINAL)%>% count()
+richness_table_Q3 %>% pull(climate1) %>% levels()
+richness_table_Q3 %>% pull(climateFINAL) %>% levels()
+richness_Q3_juv <- richness_table_Q3 %>% mutate(Group =  factor(paste(climate1,climateFINAL)))
+richness_Q3_juv %>% pull(Group) %>% levels()
 
-## climate1*climateFINAL ##
-model_Shannon_Q3_juv <- lmer(Shannon ~ climate1*climateFINAL + (1|tank), data = richness_Q3_juv) 
-Anova(model_Shannon_Q3_juv) 
-simulationOutput <- simulateResiduals(fittedModel = model_Shannon_Q3_juv, plot = T) #no problems detected
+## stats Shannon diversity
+mod1 <- glmmTMB(Shannon ~ Group + (1|tank), data = richness_Q3_juv, family = 'gaussian', REML = TRUE)
+summary(mod1)
+simulateResiduals(fittedModel = mod1, plot = T) #no problems detected
+emmeans (mod1, ~Group, type = "response") %>% pairs %>%rbind(adjust='bh')
 
-## post hoc tests ##
-hgtclimate1<- glht(model_Shannon_Q3_juv, linfct=mcp(climate1="Tukey")) 
-summary(hgtclimate1,test = adjusted("BH"))
 
 ## plot ##
-alpha_plot_Q3 <- subset(richness_table_Q3_filtered, sampleType == "juvenile")
-alpha_plot_Q3_order <- alpha_plot_Q3 %>% mutate(name2 = fct_relevel(sample_treatment, "juvenile_CCC", "juvenile_CCM", "juvenile_CCH", "juvenile_MMM", "juvenile_MMH", "juvenile_HHH")) #to reorder x axis
+alpha_plot_Q3_order <- richness_table_Q3 %>% mutate(name2 = fct_relevel(sample_treatment, "juvenile_CCC", "juvenile_CCM", "juvenile_CCH", "juvenile_MMM", "juvenile_MMH", "juvenile_HHH")) #to reorder x axis
 p <- ggplot(alpha_plot_Q3_order, aes(x=name2, y=Shannon)) + 
   geom_boxplot(alpha=0.3, colour = "black", lwd=0.2) + theme_bw() + labs(title = "Shannon") + theme( axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + aes (fill=climate1) +
   geom_point(colour = "black", size = 1)+ ylim(2.1, 6.7) + labs(title = "Shannon transplant") + theme_classic(base_size = 15)
