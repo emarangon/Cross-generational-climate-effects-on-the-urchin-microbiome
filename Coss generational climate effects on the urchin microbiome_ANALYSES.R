@@ -499,6 +499,8 @@ emmeans (mod1, ~Group, type = "response") %>% pairs %>%rbind(adjust='bh')
 			    
 #plot Shannon is in next section
 			    
+for_plot <- richness_table_ver2 %>% subset (sampleType != "seawater") %>% droplevels() %>% mutate(sample_GEN = fct_relevel(sample_gen, "gonad_F0", "gonad_F1", "larvae_F1", "larvae_F2", "juvenile_F1"))
+			    
 #plot Evenness
 p <- ggplot(for_plot, aes(x=sample_GEN, y=Evenness)) + 
   geom_boxplot(alpha=0.3, colour = "black", lwd=0.2) + theme_bw() + labs(title = "Evenness") + theme( axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + aes (fill=sampleType) +
