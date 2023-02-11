@@ -1244,6 +1244,81 @@ simulateResiduals(fittedModel = mod1, plot = T) #no problems detected
 emmeans (mod1, ~Group, type = "response") %>% pairs %>%rbind(adjust='bh')
 
 
+## more alpha diversity graphs ##
+
+#for calculating evenness
+H<- richness_table_Q2$Shannon
+S1<- richness_table_Q2$Observed
+s<-log(S1)
+evenness <- H/s
+richness_table_Q2$Evenness = evenness
+
+#for phylogenetic diversity
+PD1 <- estimate_pd(rarefied_Q2_NOcutoff)
+richness_table_Q2$PhyloDiv = PD1$PD
+
+#EVENNESS plots
+#plot Evenness M
+for_plot <- richness_table_Q2 %>% subset (sampleType != "seawater" & climate1 =="M") %>% droplevels() %>% mutate(name2 = fct_relevel(sample_gen, "gonad_F0", "larvae_F1", "juvenile_F1"))
+p <- ggplot(for_plot, aes(x=name2, y=Evenness)) + 
+  geom_boxplot(alpha=0.3, colour = "black", lwd=0.2) + theme( axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + aes (fill=sampleType) +
+  geom_point(colour = "black", size = 1)+ labs(title = "Evenness M") + theme_classic(base_size = 15) #theme classic no background 
+p
+
+#plot Evenness H
+for_plot <- richness_table_Q2 %>% subset (sampleType != "seawater" & climate1 =="H") %>% droplevels() %>% mutate(name2 = fct_relevel(sample_gen, "gonad_F0", "gonad_F1", "larvae_F1", "larvae_F2", "juvenile_F1"))
+p <- ggplot(for_plot, aes(x=name2, y=Evenness)) + 
+  geom_boxplot(alpha=0.3, colour = "black", lwd=0.2) + theme( axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + aes (fill=sampleType) +
+  geom_point(colour = "black", size = 1)+ labs(title = "Evenness H") + theme_classic(base_size = 15) #theme classic no background 
+p
+
+#SIMPSON plots
+#plot Simpson M
+for_plot <- richness_table_Q2 %>% subset (sampleType != "seawater" & climate1 =="M") %>% droplevels() %>% mutate(name2 = fct_relevel(sample_gen, "gonad_F0", "larvae_F1", "juvenile_F1"))
+p <- ggplot(for_plot, aes(x=name2, y=Simpson)) + 
+  geom_boxplot(alpha=0.3, colour = "black", lwd=0.2) + theme( axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + aes (fill=sampleType) +
+  geom_point(colour = "black", size = 1)+ labs(title = "Simpson M") + theme_classic(base_size = 15) #theme classic no background 
+p
+
+#plot Simpson H
+for_plot <- richness_table_Q2 %>% subset (sampleType != "seawater" & climate1 =="H") %>% droplevels() %>% mutate(name2 = fct_relevel(sample_gen, "gonad_F0", "gonad_F1", "larvae_F1", "larvae_F2", "juvenile_F1"))
+p <- ggplot(for_plot, aes(x=name2, y=Simpson)) + 
+  geom_boxplot(alpha=0.3, colour = "black", lwd=0.2) + theme( axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + aes (fill=sampleType) +
+  geom_point(colour = "black", size = 1)+ labs(title = "Simpson H") + theme_classic(base_size = 15) #theme classic no background 
+p
+
+#RICHNESS plots
+#plot Observed M
+for_plot <- richness_table_Q2 %>% subset (sampleType != "seawater" & climate1 =="M") %>% droplevels() %>% mutate(name2 = fct_relevel(sample_gen, "gonad_F0", "larvae_F1", "juvenile_F1"))
+p <- ggplot(for_plot, aes(x=name2, y=Observed)) + 
+  geom_boxplot(alpha=0.3, colour = "black", lwd=0.2) + theme( axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + aes (fill=sampleType) +
+  geom_point(colour = "black", size = 1)+ labs(title = "Observed M") + theme_classic(base_size = 15) #theme classic no background 
+p
+
+#plot Observed H
+for_plot <- richness_table_Q2 %>% subset (sampleType != "seawater" & climate1 =="H") %>% droplevels() %>% mutate(name2 = fct_relevel(sample_gen, "gonad_F0", "gonad_F1", "larvae_F1", "larvae_F2", "juvenile_F1"))
+p <- ggplot(for_plot, aes(x=name2, y=Observed)) + 
+  geom_boxplot(alpha=0.3, colour = "black", lwd=0.2) + theme( axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + aes (fill=sampleType) +
+  geom_point(colour = "black", size = 1)+ labs(title = "Observed H") + theme_classic(base_size = 15) #theme classic no background 
+p
+
+#PHYLOGENETIC DIVERSITY plots
+#plot phylogenetic diversity M
+for_plot <- richness_table_Q2 %>% subset (sampleType != "seawater" & climate1 =="M") %>% droplevels() %>% mutate(name2 = fct_relevel(sample_gen, "gonad_F0", "larvae_F1", "juvenile_F1"))
+p <- ggplot(for_plot, aes(x=name2, y=PhyloDiv)) + 
+  geom_boxplot(alpha=0.3, colour = "black", lwd=0.2) + theme( axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + aes (fill=sampleType) +
+  geom_point(colour = "black", size = 1)+ labs(title = "PhyloDiv M") + theme_classic(base_size = 15) #theme classic no background 
+p
+
+#plot phylogenetic diversity H
+for_plot <- richness_table_Q2 %>% subset (sampleType != "seawater" & climate1 =="H") %>% droplevels() %>% mutate(name2 = fct_relevel(sample_gen, "gonad_F0", "gonad_F1", "larvae_F1", "larvae_F2", "juvenile_F1"))
+p <- ggplot(for_plot, aes(x=name2, y=PhyloDiv)) + 
+  geom_boxplot(alpha=0.3, colour = "black", lwd=0.2) + theme( axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) + aes (fill=sampleType) +
+  geom_point(colour = "black", size = 1)+ labs(title = "PhyloDiv H") + theme_classic(base_size = 15) #theme classic no background 
+p
+
+
+
 ############################################################
 ### VENN DIAGRAM ###
 
